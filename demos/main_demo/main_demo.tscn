@@ -1,0 +1,204 @@
+[gd_scene load_steps=25 format=3 uid="uid://wwprsqy106hn"]
+
+[ext_resource type="Script" path="res://demos/main_demo/main_demo.gd" id="1_k65yf"]
+[ext_resource type="Script" path="res://utils/floating_origin.gd" id="2_03kh5"]
+[ext_resource type="Texture2D" uid="uid://60fgie6jvl4s" path="res://assets/skybox/panorama_image.png" id="3_srsml"]
+[ext_resource type="Script" path="res://addons/orbit_solver/bodies/celestial/celestial.gd" id="4_xk43v"]
+[ext_resource type="Script" path="res://addons/orbit_solver/bodies/celestial/resources/physical_fact_sheet.gd" id="5_bh3ve"]
+[ext_resource type="Script" path="res://addons/orbit_solver/math/types/keplerian_orbital_elements.gd" id="6_ocryg"]
+[ext_resource type="Script" path="res://addons/orbit_solver/bodies/celestial/resources/orbital_fact_sheet.gd" id="7_3y6j1"]
+[ext_resource type="Script" path="res://addons/orbit_solver/bodies/vessel/vessel.gd" id="8_x87w8"]
+[ext_resource type="Script" path="res://utils/free_look_camera_3d.gd" id="9_7oycy"]
+
+[sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_qhmb5"]
+panorama = ExtResource("3_srsml")
+
+[sub_resource type="Sky" id="Sky_7wepv"]
+sky_material = SubResource("PanoramaSkyMaterial_qhmb5")
+
+[sub_resource type="Environment" id="Environment_7pavk"]
+background_mode = 2
+background_color = Color(0.996078, 0.996078, 0.996078, 1)
+background_intensity = 1.0
+sky = SubResource("Sky_7wepv")
+tonemap_mode = 3
+glow_enabled = true
+glow_blend_mode = 0
+glow_hdr_threshold = 4.0
+fog_enabled = true
+fog_light_color = Color(0.054902, 0.0666667, 0.0784314, 1)
+fog_density = 0.0
+fog_sky_affect = 0.153
+
+[sub_resource type="Resource" id="Resource_oltlg"]
+script = ExtResource("5_bh3ve")
+equatorial_radius = 43.0
+equatorial_circumference = 273.0
+surface_area = 1.43329e+11
+mass = 1.53723e+15
+density = 0.039
+sidereal_rotational_velocity = 0.001
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tavy7"]
+albedo_color = Color(1, 1, 0.101961, 1)
+emission_enabled = true
+emission = Color(0.960784, 0.960784, 0.282353, 1)
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_babhk"]
+radius = 100.0
+
+[sub_resource type="Resource" id="Resource_wtfqj"]
+script = ExtResource("5_bh3ve")
+equatorial_radius = 0.1
+equatorial_circumference = 0.628
+surface_area = 753982.0
+mass = 1.53723e+15
+density = 9.747
+sidereal_rotational_velocity = 0.0
+
+[sub_resource type="Resource" id="Resource_ctk6x"]
+script = ExtResource("6_ocryg")
+semi_major_axis = 4645.29
+eccentricity = 0.136
+inclination = 0.0274017
+periapsis_argument = 0.0
+raan = 0.0
+true_anomaly = 0.0548033
+mean_anomaly = 0.0548033
+true_longitude = 0.0274017
+latitude_argument = 0.109607
+periapse_longitude = 0.0
+semilatus_rectum = 4559.83
+angular_momentum = 21629.0
+
+[sub_resource type="Resource" id="Resource_dyiu2"]
+script = ExtResource("7_3y6j1")
+orbital_elements = SubResource("Resource_ctk6x")
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_ohfq2"]
+radius = 10.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_y4w7j"]
+albedo_color = Color(0.427451, 0.745098, 0.988235, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_qxrq3"]
+size = Vector3(3.39095, 1, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_6ctwa"]
+albedo_color = Color(0.447059, 0.74902, 0.921569, 1)
+
+[sub_resource type="GDScript" id="GDScript_54cv2"]
+script/source = "extends Label
+
+
+func _process(_delta: float) -> void:
+	text = \"%s Rockets\" % get_node(\"../../../World/Rockets\").get_child_count()
+#
+"
+
+[sub_resource type="GDScript" id="GDScript_07g0f"]
+script/source = "extends Label
+
+
+func _process(_delta: float) -> void:
+	text = \"%s Time Scale\" % Planetarium.simulation_state.time_scale
+"
+
+[node name="MainDemo" type="Node"]
+script = ExtResource("1_k65yf")
+
+[node name="World" type="Node3D" parent="." node_paths=PackedStringArray("camera", "root")]
+script = ExtResource("2_03kh5")
+camera = NodePath("Earth/Camera3D")
+root = NodePath(".")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="World"]
+environment = SubResource("Environment_7pavk")
+
+[node name="Sun" type="StaticBody3D" parent="World"]
+script = ExtResource("4_xk43v")
+is_static = true
+physical_fact_sheet = SubResource("Resource_oltlg")
+orbital_fact_sheet = null
+
+[node name="CSGSphere3D" type="CSGSphere3D" parent="World/Sun"]
+radius = 100.0
+radial_segments = 64
+rings = 32
+material = SubResource("StandardMaterial3D_tavy7")
+
+[node name="OmniLight3D" type="OmniLight3D" parent="World/Sun/CSGSphere3D"]
+light_intensity_lumens = 500.0
+omni_range = 8192.0
+omni_attenuation = 0.307787
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="World/Sun"]
+shape = SubResource("SphereShape3D_babhk")
+
+[node name="Earth" type="StaticBody3D" parent="World"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5275.37, 0, 0)
+script = ExtResource("4_xk43v")
+physical_fact_sheet = SubResource("Resource_wtfqj")
+orbital_fact_sheet = SubResource("Resource_dyiu2")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="World/Earth"]
+shape = SubResource("SphereShape3D_ohfq2")
+
+[node name="CSGSphere3D" type="CSGSphere3D" parent="World/Earth"]
+radius = 10.0
+radial_segments = 64
+rings = 32
+material = SubResource("StandardMaterial3D_y4w7j")
+
+[node name="MainVessel" type="RigidBody3D" parent="World/Earth"]
+transform = Transform3D(6.12323e-17, 0, 1, 0, 1, 0, -1, 0, 6.12323e-17, 152.222, 0, 0)
+inertia = Vector3(0, 1, 0)
+gravity_scale = 0.0
+continuous_cd = true
+max_contacts_reported = 100
+contact_monitor = true
+script = ExtResource("8_x87w8")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="World/Earth/MainVessel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.171727, 0, 0)
+shape = SubResource("BoxShape3D_qxrq3")
+
+[node name="CSGCombiner3D" type="CSGCombiner3D" parent="World/Earth/MainVessel"]
+operation = 2
+
+[node name="CSGBox3D" type="CSGBox3D" parent="World/Earth/MainVessel/CSGCombiner3D"]
+size = Vector3(3, 1, 1)
+
+[node name="CSGBox3D2" type="CSGBox3D" parent="World/Earth/MainVessel/CSGCombiner3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.365, 0, 0)
+material = SubResource("StandardMaterial3D_6ctwa")
+
+[node name="LeftExaust" type="Marker3D" parent="World/Earth/MainVessel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.51119, 0, 0.50875)
+
+[node name="RightExaust" type="Marker3D" parent="World/Earth/MainVessel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.51119, 0, -0.50174)
+
+[node name="Camera3D" type="Camera3D" parent="World/Earth"]
+far = 8000.0
+script = ExtResource("9_7oycy")
+
+[node name="Rockets" type="Node3D" parent="World"]
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+offset_right = 40.0
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="Bodies" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+script = SubResource("GDScript_54cv2")
+
+[node name="Time" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+script = SubResource("GDScript_07g0f")
