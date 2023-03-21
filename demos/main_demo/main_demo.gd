@@ -14,7 +14,7 @@ var turn := 0
 var vessel_orbits := {}
 
 func _ready() -> void:
-	earth.orbital_fact_sheet.orbital_elements = OrbitalState.solve_to_keplerian_orbital_elements(
+	earth.orbital_fact_sheet.orbital_elements = OrbitalState.solve_for_keplerian_orbital_elements(
 		sun.physical_fact_sheet.mass * Planetarium.simulation_state.gravitational_constant,
 		EciState.new(
 			sun.to_local(earth.global_position),
@@ -26,6 +26,11 @@ func _ready() -> void:
 	Planetarium.add_celestial_body(earth, sun)
 	Planetarium.simulation_state.time_scale = 0.5
 	Planetarium.init()
+	
+	OrbitPlotter.plot_orbit_for(
+		earth,
+		Planetarium.solar_system
+	)
 	
 	for rocket in rockets.get_children():
 		Vessels.add_vessel(rocket)
@@ -67,7 +72,7 @@ func _spawn_rocket() -> void:
 	var rocket := VesselBody.new()
 	
 	var mesh := CSGSphere3D.new()
-	mesh.radius = 1.0
+	mesh.radius = 5.0
 	mesh.radial_segments = 64
 	mesh.rings = 32
 	
@@ -79,11 +84,12 @@ func _spawn_rocket() -> void:
 	rocket.add_child(collision_shape)
 	
 	# Pick a random position around earth
-	var theta := randf() * TAU
-	var radius := randf_range(50.0, 150.0)
-	var point := Vector2.from_angle(theta) * radius
 	rockets.add_child(rocket)
-	rocket.position = Vector3(point.x, 0.0, point.y) + earth.position
+	rocket.position = Vector3(
+		randf_range(50.0, 150.0) * (1 if randf() > 0.5 else -1),
+		randf_range(50.0, 150.0) * (1 if randf() > 0.5 else -1),
+		randf_range(50.0, 150.0) * (1 if randf() > 0.5 else -1)
+	) + earth.position
 	rocket.linear_velocity = earth.position.direction_to(rocket.position).rotated(Vector3.UP, PI / 2.0) * 40.0
 	
 	Vessels.add_vessel(rocket)

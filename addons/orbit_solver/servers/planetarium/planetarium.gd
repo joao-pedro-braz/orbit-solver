@@ -71,6 +71,11 @@ func add_celestial_body(body: CelestialBody, host: CelestialBody = null) -> void
 		return
 	else:
 		solar_system.host = body
+		# For now, at least, The Host the main Solar System has infinite influence
+		solar_system.hill_sphere = INF
+		solar_system.hill_sphere_squared = INF
+		solar_system.sphere_of_influence = INF
+		solar_system.sphere_of_influence_squared = INF
  
 
 ## Calculate the current simulation time
@@ -104,7 +109,7 @@ func _update_solar_system_initial_state(solar_tree: LocalCelestialBodySystem) ->
 	for child_system in solar_tree.children:
 		var child: CelestialBody = child_system.host
 		
-		var eci_state := OrbitalState.solve_to_eci_state(
+		var eci_state := OrbitalState.solve_for_eci_state(
 			host.physical_fact_sheet.mass * simulation_state.gravitational_constant,
 			child.orbital_fact_sheet.orbital_elements
 		)

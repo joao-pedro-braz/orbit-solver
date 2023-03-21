@@ -29,7 +29,7 @@ class_name OrbitalState
 const TOLERANCE := 1e-8
 
 
-static func solve_to_keplerian_orbital_elements(
+static func solve_for_keplerian_orbital_elements(
 		gravitation_constant: float,
 		eci_state: EciState
 ) -> KeplerianOrbitalElements:
@@ -147,7 +147,7 @@ static func solve_to_keplerian_orbital_elements(
 	return result
 
 
-static func solve_to_eci_state(
+static func solve_for_eci_state(
 	gravitation_constant: float,
 	keplerian_orbital_elements: KeplerianOrbitalElements
 ) -> EciState:

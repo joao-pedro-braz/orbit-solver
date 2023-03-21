@@ -19,10 +19,10 @@ config/icon="res://icon.svg"
 [autoload]
 
 TwoBodySimulationSolver="*res://addons/orbit_solver/solvers/two_body_simulation_solver.gd"
-OrbitalPathSolver="*res://addons/orbit_plotter/solvers/orbital_path_solver.gd"
 Planetarium="*res://addons/orbit_solver/servers/planetarium/planetarium.gd"
 Vessels="*res://addons/orbit_solver/servers/vessels/vessels.gd"
 DebugTool="*res://addons/orbit_solver/utils/debug_tool.gd"
+OrbitalPathSolver="*res://addons/orbit_plotter/solvers/orbital_path_solver.gd"
 OrbitPlotter="*res://addons/orbit_plotter/plotter/plotter.gd"
 
 [display]
@@ -69,3 +69,10 @@ driver/threads/thread_model=2
 lights_and_shadows/use_physical_light_units=true
 anti_aliasing/quality/msaa_3d=3
 anti_aliasing/quality/screen_space_aa=1
+
+[shader_globals]
+
+camera_fov={
+"type": "float",
+"value": 1.309
+}

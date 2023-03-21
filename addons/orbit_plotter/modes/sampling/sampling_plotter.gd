@@ -12,7 +12,7 @@ const LineRenderer := preload("res://addons/orbit_plotter/modes/sampling/line_re
 		if _line:
 			_set_color_and_width()
 
-@export var width: float = 0.15:
+@export var width: float = 0.05:
 	set(value):
 		width = value
 		if _line:
@@ -35,6 +35,7 @@ func plot(
 	
 	OrbitalPathSolver.done.connect(
 		func(curve: Curve3D):
+			print(curve.point_count)
 			_line.visible = true
 			_line.curve = curve,
 		CONNECT_ONE_SHOT
@@ -52,7 +53,8 @@ func plot(
 
 
 func _set_color_and_width() -> void:
+	return
 	var mesh: PrimitiveMesh = _line.multimesh.mesh
 	mesh.radius = width / 2.0
-	_line.material.set_shader_parameter("size", width)
-	_line.material.set_shader_parameter("albedo", color)
+	_line.set_instance_shader_parameter("size", width)
+	_line.set_instance_shader_parameter("albedo", color)

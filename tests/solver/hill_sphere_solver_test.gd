@@ -17,7 +17,7 @@ func _run() -> void:
 	orbital_elements.periapse_longitude = 1.79677
 	orbital_elements.periapsis_argument = 1.9933027
 	
-	child.eci_state = OrbitalState.solve_to_eci_state(
+	child.eci_state = OrbitalState.solve_for_eci_state(
 		parent.mass * OrbitServer.gravitation_constant,
 		orbital_elements
 	)

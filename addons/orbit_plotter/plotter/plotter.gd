@@ -33,7 +33,7 @@ func plot_orbit_for(body: Node3D, reference_frame: LocalCelestialBodySystem) -> 
 	if not reference_frame.host.get_children().find(plot_data.remote_transform):
 		reference_frame.host.add_child(plot_data.remote_transform)
 	
-	var orbital_elements := OrbitalState.solve_to_keplerian_orbital_elements(
+	var orbital_elements := OrbitalState.solve_for_keplerian_orbital_elements(
 		reference_frame.host.physical_fact_sheet.mass * Planetarium.simulation_state.gravitational_constant,
 		body.eci_state
 	)

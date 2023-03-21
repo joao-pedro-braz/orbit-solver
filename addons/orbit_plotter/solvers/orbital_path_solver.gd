@@ -1,6 +1,9 @@
 extends ThreadPool
 
 
+const MAX_ITERATIONS := 1e8
+
+
 signal done(curve: Curve3D)
 
 
@@ -77,14 +80,14 @@ func _do_work(data: Array) -> Curve3D:
 	var resolution: int = simulation_data.resolution
 	var gravitational_constant: float = simulation_data.gravitational_constant
 	
-	var orbital_elements := OrbitalState.solve_to_keplerian_orbital_elements(
+	var orbital_elements := OrbitalState.solve_for_keplerian_orbital_elements(
 		host_mass * gravitational_constant,
 		orbiting_eci_state
 	)
 	
 	if not is_zero_approx(orbiting_eci_state.time):
 		# We need to normalize the ECI State
-		orbiting_eci_state = OrbitalState.solve_to_eci_state(
+		orbiting_eci_state = OrbitalState.solve_for_eci_state(
 			host_mass * gravitational_constant,
 			orbital_elements
 		)
@@ -92,12 +95,13 @@ func _do_work(data: Array) -> Curve3D:
 	
 	var period: float
 	if orbital_elements.eccentricity >= 1.0:
+		print("opie")
 		period = 2.0 * sphere_of_influence / orbiting_eci_state.velocity.length()
 	else:
 		period = OrbitalPeriod.solve(host_mass, orbital_elements)
-	
+	print(period)
 	var first := true
-	var samplings := floori(period)
+	var samplings := ceili(period)
 	var offset := -samplings / 2.0
 	var result: Array[EciState] = [
 		# first guess
@@ -116,7 +120,9 @@ func _do_work(data: Array) -> Curve3D:
 			result[-1]
 		)
 	]
-	while offset <= samplings:
+	var iterations := 0
+	while offset <= samplings and iterations < MAX_ITERATIONS:
+		iterations += 1
 		var instruction: Instruction = instructions.pop_front()
 		
 		var timestamp = offset + instruction.jump_size
