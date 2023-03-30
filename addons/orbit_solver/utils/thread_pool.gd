@@ -14,6 +14,7 @@ class ThreadPoolUnit:
 	extends Thread
 	
 	var idle := true
+	var ad_hoc := false
 
 
 var _thread_pool: Array[ThreadPoolUnit]
@@ -50,13 +51,17 @@ func _execute_work(work: Array, job: Callable, threads_override = -1) -> Array[T
 	var amount_of_work := work.size()
 	var waiting_threads: Array[ThreadPoolUnit] = []
 	var i := 0
-	for unit in _thread_pool:
+	for index in range(_thread_pool.size(), 0, -1):
+		var unit := _thread_pool[index - 1]
 		if not unit.idle or unit.is_alive():
 			if not unit.is_alive() and unit.is_started():
 				unit.wait_to_finish()
 				unit.idle = true
-			
-			continue
+				if unit.ad_hoc:
+					_thread_pool.remove_at(index - 1)
+					continue
+			else:
+				continue
 		
 		if unit.is_started():
 			unit.wait_to_finish()
@@ -72,7 +77,10 @@ func _execute_work(work: Array, job: Callable, threads_override = -1) -> Array[T
 	
 	# if no idle theads are available on the pool, create an ad-hoc one
 	if waiting_threads.is_empty():
-		waiting_threads.append(ThreadPoolUnit.new())
+		var unit := ThreadPoolUnit.new()
+		unit.ad_hoc = true
+		_thread_pool.append(unit)
+		waiting_threads.append(unit)
 	
 	i = 0
 	var work_per_thread := ceili(float(amount_of_work) / waiting_threads.size())
