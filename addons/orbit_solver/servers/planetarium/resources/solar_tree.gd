@@ -51,7 +51,7 @@ func find(host: CelestialBody) -> LocalCelestialBodySystem:
 	for child in children:
 		var result := child.find(host)
 		if result != null:
-			break
+			return result
 	
 	return null
 

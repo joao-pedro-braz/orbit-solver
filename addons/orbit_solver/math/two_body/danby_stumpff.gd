@@ -65,10 +65,8 @@ static func solve(
 
 		var y := en * simulation_duration - es
 		var z := es * cos(y) + ec * sin(y)
-		var sigma: float
-		if is_zero_approx(z):
-			sigma = 1.0
-		else:
+		var sigma := 1.0
+		if not is_zero_approx(z):
 			sigma = absf(z) / z
 		x = y + 0.85 * sigma * e
 		s = x / sqrt(alpha)
@@ -150,8 +148,8 @@ static func solve(
 		if abs(ds) < TOLERANCE or nc > 10:
 			break
 	
-	if nc > 15:
-		push_warning("DanbyStumpff: More than 15 iterations when trying to solve universal form of Kepler's equation, trying Shepard's method")
+	if nc > 20:
+		push_warning("DanbyStumpff: More than 20 iterations when trying to solve universal form of Kepler's equation, trying Shepard's method")
 		# As a Fallback, we try to solve it using Shepard's method
 		return Shepard.solve(mu, simulation_duration, eci_state)
 	

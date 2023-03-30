@@ -33,7 +33,8 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	if DEBUG:
-		print(
+		prints(
+			"Threads:",
 			_thread_pool
 				.filter(func(unit: ThreadPoolUnit): return not unit.busy)
 				.size()
@@ -42,12 +43,23 @@ func _physics_process(delta: float) -> void:
 
 ## Actually execute the work.
 func _execute_work(work: Array, job: Callable, threads_override = -1) -> Array[ThreadPoolUnit]:
+	if not THREADED:
+		job.bind(work).call()
+		return []
+	
 	var amount_of_work := work.size()
 	var waiting_threads: Array[ThreadPoolUnit] = []
 	var i := 0
 	for unit in _thread_pool:
-		if not unit.idle:
+		if not unit.idle or unit.is_alive():
+			if not unit.is_alive() and unit.is_started():
+				unit.wait_to_finish()
+				unit.idle = true
+			
 			continue
+		
+		if unit.is_started():
+			unit.wait_to_finish()
 		
 		waiting_threads.append(unit)
 		
@@ -58,14 +70,18 @@ func _execute_work(work: Array, job: Callable, threads_override = -1) -> Array[T
 		if i > amount_of_work:
 			break
 	
+	# if no idle theads are available on the pool, create an ad-hoc one
+	if waiting_threads.is_empty():
+		waiting_threads.append(ThreadPoolUnit.new())
+	
 	i = 0
 	var work_per_thread := ceili(float(amount_of_work) / waiting_threads.size())
 	for unit in waiting_threads:
 		unit.idle = false
 		if waiting_threads[-1] == unit:
-			unit.start(job.bind(work.slice(i)))
+			unit.start(job.bind(work.slice(i), unit))
 		else:
-			unit.start(job.bind(work.slice(i, i + work_per_thread)))
+			unit.start(job.bind(work.slice(i, i + work_per_thread), unit))
 		i += work_per_thread
 
 	if waiting_threads.size() <= 0 or waiting_threads.size() == _thread_pool.size():

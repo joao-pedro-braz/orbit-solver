@@ -29,7 +29,7 @@ func _ready() -> void:
 	
 	OrbitPlotter.plot_orbit_for(
 		earth,
-		Planetarium.solar_system
+		Planetarium.solar_system.find(earth)
 	)
 	
 	for rocket in rockets.get_children():
@@ -65,7 +65,7 @@ func _input(event: InputEvent) -> void:
 				for i in 1:
 					_spawn_rocket()
 			elif OS.get_keycode_string(event.keycode) == '4':
-				Vessels.predict_orbit(rockets.get_child(randi() % rockets.get_child_count()), 100)
+				Planetarium.simulation_state.time_scale *= -1
 
 
 func _spawn_rocket() -> void:
@@ -90,7 +90,7 @@ func _spawn_rocket() -> void:
 		randf_range(50.0, 150.0) * (1 if randf() > 0.5 else -1),
 		randf_range(50.0, 150.0) * (1 if randf() > 0.5 else -1)
 	) + earth.position
-	rocket.linear_velocity = earth.position.direction_to(rocket.position).rotated(Vector3.UP, PI / 2.0) * 40.0
+	rocket.linear_velocity = earth.position.direction_to(rocket.position).rotated(Vector3.UP, PI / 2.0) * 2.0
 	
 	Vessels.add_vessel(rocket)
 	

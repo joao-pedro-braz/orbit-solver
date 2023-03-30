@@ -1,10 +1,12 @@
 extends ThreadPool
 
 
-const MAX_ITERATIONS := 1e8
+const MAX_ITERATIONS := 1e5
+const JUMP_SIZE_THRESHOLD := 1e-2
 
 
-signal done(curve: Curve3D)
+class DoneSignal:
+	signal done(curve: PackedVector3Array)
 
 
 class SimulationData:
@@ -14,6 +16,7 @@ class SimulationData:
 	var orbiting_eci_state: EciState
 	var resolution: float
 	var gravitational_constant: float
+	var done_signal: DoneSignal
 	
 	func _init(
 		host_mass: float,
@@ -22,6 +25,7 @@ class SimulationData:
 		orbiting_eci_state: EciState,
 		resolution: float,
 		gravitational_constant: float,
+		done_signal: DoneSignal
 	) -> void:
 		self.host_mass = host_mass
 		self.sphere_of_influence = sphere_of_influence
@@ -29,6 +33,7 @@ class SimulationData:
 		self.orbiting_eci_state = orbiting_eci_state
 		self.resolution = resolution
 		self.gravitational_constant = gravitational_constant
+		self.done_signal = done_signal
 
 
 class Instruction:
@@ -48,8 +53,9 @@ func solve(
 	sphere_of_influence: float,
 	sphere_of_influence_squared: float,
 	orbiting_eci_state: EciState,
-	resolution: int) -> Curve3D:
-	var waiting_threads: Array[ThreadPoolUnit] = _execute_work(
+	resolution: int) -> DoneSignal:
+	var done_signal := DoneSignal.new()
+	_execute_work(
 		[
 			SimulationData.new(
 				host_mass,
@@ -58,19 +64,15 @@ func solve(
 				orbiting_eci_state,
 				resolution,
 				Planetarium.simulation_state.gravitational_constant,
+				done_signal
 			),
 		],
 		_do_work,
 		1
 	)
-	var result: Curve3D
-	for unit in waiting_threads:
-		result = unit.wait_to_finish()
-		unit.idle = true
-	
-	return result
+	return done_signal
 
-func _do_work(data: Array) -> Curve3D:
+func _do_work(data: Array, unit: ThreadPool.ThreadPoolUnit) -> void:
 	var simulation_data: SimulationData = data[0]
 	
 	var host_mass: float = simulation_data.host_mass
@@ -79,6 +81,7 @@ func _do_work(data: Array) -> Curve3D:
 	var orbiting_eci_state: EciState = simulation_data.orbiting_eci_state
 	var resolution: int = simulation_data.resolution
 	var gravitational_constant: float = simulation_data.gravitational_constant
+	var done_signal: DoneSignal = simulation_data.done_signal
 	
 	var orbital_elements := OrbitalState.solve_for_keplerian_orbital_elements(
 		host_mass * gravitational_constant,
@@ -92,77 +95,51 @@ func _do_work(data: Array) -> Curve3D:
 			orbital_elements
 		)
 	
-	
-	var period: float
-	if orbital_elements.eccentricity >= 1.0:
-		print("opie")
-		period = 2.0 * sphere_of_influence / orbiting_eci_state.velocity.length()
-	else:
-		period = OrbitalPeriod.solve(host_mass, orbital_elements)
-	print(period)
 	var first := true
-	var samplings := ceili(period)
-	var offset := -samplings / 2.0
-	var result: Array[EciState] = [
-		# first guess
-		DanbyStumpff.solve(
-			host_mass * gravitational_constant,
-			offset + orbiting_eci_state.time,
-			EciState.new(
-				orbiting_eci_state.position,
-				orbiting_eci_state.velocity
-			)
-		),
-	]
+	var offset := 0.0
+	var first_guess := DanbyStumpff.solve(
+		host_mass * gravitational_constant,
+		offset + orbiting_eci_state.time,
+		orbiting_eci_state
+	)
+	var result := PackedVector3Array([first_guess.position])
 	var instructions: Array[Instruction] = [
 		Instruction.new(
-			period / samplings,
-			result[-1]
+			resolution,
+			first_guess
 		)
 	]
 	var iterations := 0
-	while offset <= samplings and iterations < MAX_ITERATIONS:
+	while iterations < MAX_ITERATIONS:
 		iterations += 1
 		var instruction: Instruction = instructions.pop_front()
 		
 		var timestamp = offset + instruction.jump_size
-		var eci_state := DanbyStumpff.solve(
+		var eci_state := Danby.solve(
 			host_mass * gravitational_constant,
 			timestamp + orbiting_eci_state.time,
-			EciState.new(
-				orbiting_eci_state.position,
-				orbiting_eci_state.velocity
-			)
+			orbiting_eci_state
+		) if orbital_elements.eccentricity >= 1.0 else DanbyStumpff.solve(
+			host_mass * gravitational_constant,
+			timestamp + orbiting_eci_state.time,
+			orbiting_eci_state
 		)
 		
 		if eci_state.position.length_squared() > sphere_of_influence_squared:
-			# Outside of the sphere of influence, don't bother
-			offset += instruction.jump_size
-			instructions.push_front(Instruction.new(instruction.jump_size * 2.0, eci_state))
-			continue
+			break
 		
 		var distance = eci_state.position.distance_to(instruction.eci_state.position)
-		if distance > resolution:
+		if distance > resolution and instruction.jump_size > JUMP_SIZE_THRESHOLD:
 			# Still have work to do
-			var new_jump_size := instruction.jump_size / 2.0
+			var new_jump_size := instruction.jump_size * 0.5
 			instructions.push_front(Instruction.new(new_jump_size, instruction.eci_state))
 		else:
 			# Good enough
-			result.append(eci_state)
+			result.append(eci_state.position)
 			offset += instruction.jump_size
 			
 			# Process next instruction
 			instructions.push_front(Instruction.new(instruction.jump_size * 2.0, eci_state))
 	
-	var curve_3d := Curve3D.new()
-	for eci_state in result:
-		curve_3d.add_point(eci_state.position)
-	
-	# So we force baking
-	curve_3d.get_baked_points()
-	emit_signal("done", curve_3d)
-	return curve_3d
-
-
-func _sub_steps() -> void:
-	pass
+	done_signal.done.emit(result)
+	unit.idle = true

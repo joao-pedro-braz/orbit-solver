@@ -215,3 +215,103 @@ static func solve_for_eci_state(
 		position_pqw * transform,
 		velocity_pqw * transform
 	)
+
+
+static func rv2coe(
+		gravitation_constant: float,
+		eci_state: EciState
+	) -> KeplerianOrbitalElements:
+	var orbital_elements := KeplerianOrbitalElements.new()
+	
+	var h := eci_state.position.cross(eci_state.velocity)
+	var n := Vector3.BACK.cross(h)
+	var e := ((eci_state.velocity.length_squared() - gravitation_constant / eci_state.position.length()) \
+		* eci_state.position - eci_state.position.dot(eci_state.velocity) * eci_state.velocity) / gravitation_constant
+	orbital_elements.eccentricity = e.length()
+	orbital_elements.semilatus_rectum = h.length_squared() / gravitation_constant
+	orbital_elements.inclination = acos(h.z / h.length())
+
+	var circular := orbital_elements.eccentricity < TOLERANCE
+	var equatorial := absf(orbital_elements.inclination) < TOLERANCE
+
+	if equatorial and not circular:
+		orbital_elements.raan = 0.0
+		orbital_elements.periapsis_argument = fmod(atan2(e.y, e.x), TAU)
+		orbital_elements.true_anomaly = atan2((h.dot(e.cross(eci_state.position))) / h.length(), eci_state.position.dot(e))
+	elif not equatorial and circular:
+		orbital_elements.raan = fmod(atan2(n.y, n.x), TAU)
+		orbital_elements.periapsis_argument = 0.0
+		orbital_elements.true_anomaly = atan2((eci_state.position.dot(h.cross(n))) / h.length(), eci_state.position.dot(n))
+	elif equatorial and circular:
+		orbital_elements.raan = 0
+		orbital_elements.periapsis_argument = 0
+		orbital_elements.true_anomaly = fmod(atan2(eci_state.position[1], eci_state.position[0]), TAU)  # True longitude
+	else:
+		var a := orbital_elements.semilatus_rectum / (1.0 - (orbital_elements.eccentricity ** 2.0))
+		var ka := gravitation_constant * a
+		if a > 0.0:
+			var e_se := eci_state.position.dot(eci_state.velocity) / sqrt(ka)
+			var e_ce := eci_state.position.length() * eci_state.velocity.length_squared() / gravitation_constant - 1.0
+			orbital_elements.true_anomaly = OrbitalAngles.eccentric_anomaly_to_true_anomaly(
+				atan2(e_se, e_ce),
+				orbital_elements.eccentricity
+			)
+		else:
+			var e_sh := eci_state.position.dot(eci_state.velocity) / sqrt(-ka)
+			var e_ch := eci_state.position.length() * (eci_state.velocity.length() ** 2.0) / gravitation_constant - 1.0
+			orbital_elements.true_anomaly = OrbitalAngles.hyperbolic_anomaly_to_true_anomaly(
+				log((e_ch + e_sh) / (e_ch - e_sh)) / 2.0,
+				orbital_elements.eccentricity
+			)
+
+		orbital_elements.raan = fmod(atan2(n[1], n[0]), TAU)
+		var px := eci_state.position.dot(n)
+		var py := eci_state.position.dot(h.cross(n)) / h.length()
+		orbital_elements.periapsis_argument = fmod(atan2(py, px) - orbital_elements.true_anomaly, TAU)
+
+	orbital_elements.true_anomaly = fmod(orbital_elements.true_anomaly + PI, TAU) - PI
+
+	return orbital_elements
+
+
+static func rv_pqw(
+	gravitation_constant: float,
+	semilatus_rectum: float,
+	eccentricity: float,
+	true_anomaly: float) -> EciState:
+	return EciState.new(
+		Vector3(cos(true_anomaly), sin(true_anomaly), 0.0) * (semilatus_rectum / (1.0 + eccentricity * cos(true_anomaly))),
+		Vector3(-sin(true_anomaly), eccentricity + cos(true_anomaly), 0.0) * sqrt(gravitation_constant / semilatus_rectum)
+	)
+
+
+static func coe_rotation_matrix(
+	inclination: float,
+	raan: float,
+	periapsis_argument: float
+) -> Basis:
+	var basis := Basis.IDENTITY
+	basis = basis.rotated(Vector3.BACK, periapsis_argument)
+	basis = basis.rotated(Vector3.RIGHT, inclination)
+	basis = basis.rotated(Vector3.BACK, raan)
+	return basis
+
+
+static func coe2rv(
+	gravitation_constant: float,
+	keplerian_orbital_elements: KeplerianOrbitalElements
+) -> EciState:
+	var pwq := rv_pqw(
+		gravitation_constant,
+		keplerian_orbital_elements.semilatus_rectum,
+		keplerian_orbital_elements.eccentricity,
+		keplerian_orbital_elements.true_anomaly,
+	)
+	var rm := coe_rotation_matrix(
+		keplerian_orbital_elements.inclination,
+		keplerian_orbital_elements.raan,
+		keplerian_orbital_elements.periapsis_argument
+	)
+	pwq.position *= rm
+	pwq.velocity *= rm
+	return pwq

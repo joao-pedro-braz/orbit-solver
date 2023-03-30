@@ -5,13 +5,11 @@ extends MeshInstance3D
 const DefaultMaterial := preload("res://addons/orbit_plotter/modes/sampling/line_renderer/default.material")
 
 
-@export var curve: Curve3D:
+@export var curve: PackedVector3Array:
 	set(value):
 		curve = value
 		if _is_ready:
 			_mesh_builder_semaphore.post()
-		
-		curve.changed.connect(func(): _mesh_builder_semaphore.post())
 
 
 @export var material: StandardMaterial3D:
@@ -62,12 +60,14 @@ func _exit_tree() -> void:
 
 
 func _instance_mesh() -> void:
+	if curve.size() <= 1:
+		return
+	
 	mesh.clear_surfaces()
 	mesh.surface_begin(Mesh.PRIMITIVE_LINE_STRIP, material)
-	# Filter out repeated points:
-	for i in curve.point_count:
-		var point := curve.get_point_position(i)
-		var next_point := curve.get_point_position((i + 1) % curve.point_count)
+	for i in curve.size():
+		var point := curve[i]
+		var next_point := curve[(i + 1) % curve.size()]
 		if point.is_equal_approx(next_point):
 			continue
 		mesh.surface_add_vertex(point)

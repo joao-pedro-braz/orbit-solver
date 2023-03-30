@@ -120,7 +120,7 @@ static func solve(
 		var dtau := gg + mu * s3 - simulation_duration
 		rfm = abs(rsdvs * s1 + mu * s2 + rsm * pc0)
 		
-		if abs(dtau) < abs(simulation_duration) * TOLERANCE:
+		if abs(dtau) < (abs(simulation_duration) * TOLERANCE):
 			break
 		else:
 			psi -= dtau / rfm

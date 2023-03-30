@@ -25,11 +25,19 @@ class_name CelestialBody
 ## Also affects how it behaves in the simulation.
 var orbital_fact_sheet: CelestialBodyOrbitalFactSheet
 
-# The initial ECI State of the body, if it isn't static
+## The initial ECI State of the body, if it isn't static
 var initial_eci_state: EciState
 
-# The Current ECI State of the body, if it isn't static
+## The Current ECI State of the body, if it isn't static
 var eci_state: EciState
+
+
+## The local celestial body system relative to this body
+var local_celestial_body_system: LocalCelestialBodySystem
+
+
+func set_local_celestial_body_system(local_celestial_body_system: LocalCelestialBodySystem) -> void:
+	self.local_celestial_body_system = local_celestial_body_system
 
 
 func set_initial_eci_state(eci_state: EciState) -> void:

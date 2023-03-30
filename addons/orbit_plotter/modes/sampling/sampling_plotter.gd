@@ -2,7 +2,7 @@ extends Node3D
 
 
 # Size in kilometers of each segment
-const SAMPLING_PLOTTER_RESOLUTION := 5.0
+const SAMPLING_PLOTTER_RESOLUTION := 15.0
 const LineRenderer := preload("res://addons/orbit_plotter/modes/sampling/line_renderer/line_renderer.gd")
 
 @export_category("Rendering")
@@ -33,21 +33,13 @@ func plot(
 		_line.visible = false
 		add_child(_line)
 	
-	OrbitalPathSolver.done.connect(
-		func(curve: Curve3D):
-			print(curve.point_count)
-			_line.visible = true
-			_line.curve = curve,
-		CONNECT_ONE_SHOT
-	)
-	
 	OrbitalPathSolver.solve(
 		host_mass,
 		sphere_of_influence,
 		sphere_of_influence_squared,
 		eci_state,
 		SAMPLING_PLOTTER_RESOLUTION
-	)
+	).done.connect(_set_curve, CONNECT_ONE_SHOT)
 	
 	_set_color_and_width()
 
@@ -58,3 +50,8 @@ func _set_color_and_width() -> void:
 	mesh.radius = width / 2.0
 	_line.set_instance_shader_parameter("size", width)
 	_line.set_instance_shader_parameter("albedo", color)
+
+
+func _set_curve(result: PackedVector3Array) -> void:
+	_line.visible = true
+	_line.curve = result

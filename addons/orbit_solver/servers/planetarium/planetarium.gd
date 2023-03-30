@@ -119,6 +119,7 @@ func _update_solar_system_initial_state(solar_tree: LocalCelestialBodySystem) ->
 		child_system.hill_sphere_squared = child_system.hill_sphere ** 2.0
 		child_system.sphere_of_influence = SphereOfInfluence.solve(host, child)
 		child_system.sphere_of_influence_squared = child_system.sphere_of_influence ** 2.0
+		child.set_local_celestial_body_system(child_system)
 		_update_solar_system_initial_state(child_system)
 
 

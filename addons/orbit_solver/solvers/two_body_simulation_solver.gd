@@ -60,10 +60,10 @@ func solve(
 
 		return results
 	else:
-		return _do_work(simulation_data)
+		return _do_work(simulation_data, null)
 
 
-func _do_work(work: Array[SimulationData]) -> Array[SimulationResult]:
+func _do_work(work: Array[SimulationData], _unit: ThreadPool.ThreadPoolUnit) -> Array[SimulationResult]:
 	var result: Array[SimulationResult] = []
 	for data in work:
 		var eci_state := DanbyStumpff.solve(

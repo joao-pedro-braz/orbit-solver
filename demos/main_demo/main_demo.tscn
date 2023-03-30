@@ -52,7 +52,7 @@ script = ExtResource("5_bh3ve")
 equatorial_radius = 0.1
 equatorial_circumference = 0.628
 surface_area = 753982.0
-mass = 1.53723e+15
+mass = 1.53723e+13
 density = 9.747
 sidereal_rotational_velocity = 0.0
 
