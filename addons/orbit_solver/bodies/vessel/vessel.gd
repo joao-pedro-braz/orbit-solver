@@ -7,11 +7,26 @@
 extends RigidBody3D
 class_name VesselBody
 
+
 enum DriverMode {
 	ORBITAL_ON_RAILS,
 	ORBITAL_OFF_RAILS,
 	UNDER_ACCELERATION
 }
+
+enum HookLifetime {
+	START,
+	END
+}
+
+# Hooks for other parts of the system to interact with this vessel
+signal entered_new_system_hook(lifetime: HookLifetime)
+signal vessel_apply_central_force_hook(force: Vector3, lifetime: HookLifetime)
+signal vessel_apply_central_impulse_hook(impulse: Vector3, lifetime: HookLifetime)
+signal vessel_apply_force_hook(force: Vector3, my_position: Vector3, lifetime: HookLifetime)
+signal vessel_apply_impulse_hook(force: Vector3, my_position: Vector3, lifetime: HookLifetime)
+signal vessel_apply_torque_hook(torque: Vector3, lifetime: HookLifetime)
+signal vessel_apply_torque_impulse_hook(impulse: Vector3, lifetime: HookLifetime)
 
 
 ## The current ECI state of the craft.
@@ -104,7 +119,9 @@ func on_vessel_removed() -> void:
 
 
 func on_entered_new_system(eci_state: EciState, system_tree: LocalCelestialBodySystem) -> void:
-
+	print('oi')
+	entered_new_system_hook.emit(HookLifetime.START)
+	
 	self.eci_state = eci_state
 	# Since our frame of reference is changing (eci_state)
 	# we need to update it's time component as well
@@ -116,41 +133,67 @@ func on_entered_new_system(eci_state: EciState, system_tree: LocalCelestialBodyS
 	
 	current_system_tree = system_tree
 	current_system_tree.host_updated.connect(_on_celestial_host_updated)
+	
+	entered_new_system_hook.emit(HookLifetime.END)
 
 
 ## Custom version of apply_central_force
 func vessel_apply_central_force(force: Vector3) -> void:
+	vessel_apply_central_force_hook.emit(force, HookLifetime.START)
+
 	mode = DriverMode.ORBITAL_OFF_RAILS
 	super.apply_central_force(force)
+
+	vessel_apply_central_force_hook.emit(force, HookLifetime.END)
 
 
 ## Custom version of apply_central_impulse
 func vessel_apply_central_impulse(impulse: Vector3) -> void:
+	vessel_apply_central_impulse_hook.emit(impulse, HookLifetime.START)
+
 	mode = DriverMode.ORBITAL_OFF_RAILS
 	super.apply_central_impulse(impulse)
 
+	vessel_apply_central_impulse_hook.emit(impulse, HookLifetime.END)
+
 
 ## Custom version of apply_force
-func vessel_apply_force(force: Vector3, position: Vector3 = Vector3(0, 0, 0)) -> void:
+func vessel_apply_force(force: Vector3, my_position: Vector3 = Vector3(0, 0, 0)) -> void:
+	vessel_apply_force_hook.emit(force, my_position, HookLifetime.START)
+
 	mode = DriverMode.ORBITAL_OFF_RAILS
-	super.apply_force(force, position)
+	super.apply_force(force, my_position)
+
+	vessel_apply_force_hook.emit(force, my_position, HookLifetime.END)
 
 
 ## Custom version of apply_impulse
-func vessel_apply_impulse(impulse: Vector3, position: Vector3 = Vector3(0, 0, 0)) -> void:
+func vessel_apply_impulse(impulse: Vector3, my_position: Vector3 = Vector3(0, 0, 0)) -> void:
+	vessel_apply_impulse_hook.emit(impulse, my_position, HookLifetime.START)
+
 	mode = DriverMode.ORBITAL_OFF_RAILS
-	super.apply_impulse(impulse, position)
+	super.apply_impulse(impulse, my_position)
+
+	vessel_apply_impulse_hook.emit(impulse, my_position, HookLifetime.END)
 
 
 ## Custom version of apply_torque
 func vessel_apply_torque(torque: Vector3) -> void:
+	vessel_apply_torque_hook.emit(torque, HookLifetime.START)
+
 	mode = DriverMode.ORBITAL_OFF_RAILS
 	super.apply_torque(torque)
+
+	vessel_apply_torque_hook.emit(torque, HookLifetime.END)
 
 
 ## Custom version of apply_torque_impulse
 func vessel_apply_torque_impulse(impulse: Vector3) -> void:
+	vessel_apply_torque_impulse_hook.emit(impulse, HookLifetime.START)
+
 	mode = DriverMode.ORBITAL_OFF_RAILS
 	super.apply_torque_impulse(impulse)
+
+	vessel_apply_torque_impulse_hook.emit(impulse, HookLifetime.END)
 
 

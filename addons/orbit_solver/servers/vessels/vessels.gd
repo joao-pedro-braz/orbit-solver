@@ -116,18 +116,14 @@ func _update_vessel_metadata(vessel: VesselBody, force_update := false) -> void:
 	var influent := Planetarium.find_system_influent_over(vessel.global_position)
 	# Only update the influent_system if it actually changed
 	if influent != _vessels[vessel].influent_system:
-		_vessels[vessel].influent_system = influent
-		
 		# When entering a influent_system, we need to adjust our state
 		# so it's aligned with the host's reference frame.
 		var eci_state: EciState
 		if vessel.eci_state != null:
-			var time := vessel.eci_state.time
 			eci_state = EciState.new(
-				influent.host.to_local(vessel.eci_state.position),
+				influent.host.to_local(_vessels[vessel].influent_system.host.to_global(vessel.eci_state.position)),
 				vessel.eci_state.velocity
 			)
-			eci_state.time = time
 		else:
 			var time := vessel.eci_state.time if vessel.eci_state != null else 0
 			eci_state = EciState.new(
@@ -135,6 +131,8 @@ func _update_vessel_metadata(vessel: VesselBody, force_update := false) -> void:
 				vessel.linear_velocity
 			)
 			eci_state.time = 0
+		
+		_vessels[vessel].influent_system = influent
 		
 		if force_update:
 			vessel.on_entered_new_system(eci_state, influent)

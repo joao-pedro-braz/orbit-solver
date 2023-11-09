@@ -25,6 +25,13 @@ func plot_orbit_for(body: Node3D, reference_frame: LocalCelestialBodySystem) -> 
 	else:
 		plot_data = OrbitPlotData.new()
 		_orbits[body] = plot_data
+		
+		if body is VesselBody:
+			(body as VesselBody).entered_new_system_hook.connect(
+				func(lifetime: VesselBody.HookLifetime):
+					if lifetime == VesselBody.HookLifetime.START:
+						_remove_plot(body)
+			)
 	
 	if plot_data.remote_transform == null:
 		plot_data.remote_transform = RemoteTransform3D.new()
@@ -41,13 +48,12 @@ func plot_orbit_for(body: Node3D, reference_frame: LocalCelestialBodySystem) -> 
 		dominant_reference.host.add_child(plot_data.plotter)
 		plot_data.plotter.global_position = dominant_reference.host.global_position
 		plot_data.plotter.plot(
+			dominant_reference.host.physical_fact_sheet.equatorial_radius ** 2.0,
 			dominant_reference.host.physical_fact_sheet.mass,
 			dominant_reference.sphere_of_influence,
 			dominant_reference.sphere_of_influence_squared,
 			body.eci_state,
 		)
-	else:
-		pass
 	
 	if body is CelestialBody:
 		# Add SOI
@@ -60,4 +66,13 @@ func plot_orbit_for(body: Node3D, reference_frame: LocalCelestialBodySystem) -> 
 			remote_transform.remote_path = plot_data.sphere_of_influence_mesh.get_path()
 			body.add_child(remote_transform)
 		
-		plot_data.sphere_of_influence_mesh.radius = reference_frame.sphere_of_influence * 0.5
+		plot_data.sphere_of_influence_mesh.radius = reference_frame.sphere_of_influence
+
+
+func _remove_plot(body: Node3D) -> void:
+	var plot_data: OrbitPlotData = _orbits[body]
+	if plot_data.remote_transform != null and plot_data.remote_transform.get_parent() != null:
+		plot_data.remote_transform.get_parent().remove_child(plot_data.remote_transform)
+	if plot_data.plotter != null and plot_data.plotter.get_parent() != null:
+		plot_data.plotter.get_parent().remove_child(plot_data.plotter)
+	_orbits.erase(body)

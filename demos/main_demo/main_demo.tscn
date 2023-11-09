@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://demos/main_demo/main_demo.gd" id="1_k65yf"]
 [ext_resource type="Script" path="res://utils/floating_origin.gd" id="2_03kh5"]
-[ext_resource type="Texture2D" uid="uid://60fgie6jvl4s" path="res://assets/skybox/panorama_image.png" id="3_srsml"]
+[ext_resource type="Texture2D" uid="uid://60fgie6jvl4s" path="res://demos/main_demo/assets/skybox/panorama_image.png" id="3_srsml"]
 [ext_resource type="Script" path="res://addons/orbit_solver/bodies/celestial/celestial.gd" id="4_xk43v"]
 [ext_resource type="Script" path="res://addons/orbit_solver/bodies/celestial/resources/physical_fact_sheet.gd" id="5_bh3ve"]
 [ext_resource type="Script" path="res://addons/orbit_solver/math/types/keplerian_orbital_elements.gd" id="6_ocryg"]

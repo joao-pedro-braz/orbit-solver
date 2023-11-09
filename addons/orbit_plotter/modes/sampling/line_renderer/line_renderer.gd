@@ -23,7 +23,7 @@ const DefaultMaterial := preload("res://addons/orbit_plotter/modes/sampling/line
 		if not material:
 			material = DefaultMaterial
 		return material
-
+@export var is_closed: bool
 
 @onready var _is_ready := true
 
@@ -64,11 +64,21 @@ func _instance_mesh() -> void:
 		return
 	
 	mesh.clear_surfaces()
+#	mesh.surface_begin(Mesh.PRIMITIVE_LINE_STRIP if is_closed else Mesh.PRIMITIVE_LINES, material)
 	mesh.surface_begin(Mesh.PRIMITIVE_LINE_STRIP, material)
+	prints("is closed", is_closed, "is even", curve.size() % 2 == 0)
 	for i in curve.size():
 		var point := curve[i]
 		var next_point := curve[(i + 1) % curve.size()]
 		if point.is_equal_approx(next_point):
 			continue
 		mesh.surface_add_vertex(point)
+#		if not is_closed and i < curve.size() - 1:
+#		if i > 1 and i < curve.size() - 1:
+#			mesh.surface_add_vertex(next_point)
+#		if not is_closed:
+#			if i > 1:
+#				mesh.surface_add_vertex(point)
+#		elif curve.size() % 2 == 0:
+#			mesh.surface_add_vertex(point)
 	mesh.surface_end()

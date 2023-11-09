@@ -3,7 +3,7 @@ extends MeshInstance3D
 class_name SphereOfInfluenceMeshInstance3D
 
 
-const SoiMesh := preload("res://addons/orbit_plotter/sphere_of_influence/sphere_of_influence.tres")
+const SoiMesh := preload("res://addons/orbit_plotter/sphere_of_influence/new_sphere_mesh.tres")
 
 
 @export var radius := 10.0:
@@ -32,7 +32,7 @@ func _process(_delta: float) -> void:
 	if camera != null:
 		var distance_to_camera := global_position.distance_squared_to(camera.global_position)
 		var fade := smoothstep(_proximity_fade_distance, radius ** 2.0, distance_to_camera)
-		mesh.material.set_shader_parameter("transparency", fade)
+		transparency = 1.0 - fade
 		visible = not is_zero_approx(fade)
 
 

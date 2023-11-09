@@ -21,6 +21,7 @@ func _ready() -> void:
 			Vector3.BACK * 4.5
 		)
 	)
+	earth.physical_fact_sheet.equatorial_radius = 10.0
 	
 	Planetarium.add_celestial_body(sun)
 	Planetarium.add_celestial_body(earth, sun)
@@ -90,7 +91,7 @@ func _spawn_rocket() -> void:
 		randf_range(50.0, 150.0) * (1 if randf() > 0.5 else -1),
 		randf_range(50.0, 150.0) * (1 if randf() > 0.5 else -1)
 	) + earth.position
-	rocket.linear_velocity = earth.position.direction_to(rocket.position).rotated(Vector3.UP, PI / 2.0) * 2.0
+	rocket.linear_velocity = earth.position.direction_to(rocket.position).rotated(Vector3.UP, PI / 2.0) * randf() * 6.0
 	
 	Vessels.add_vessel(rocket)
 	

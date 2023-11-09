@@ -45,7 +45,7 @@ func _physics_process(delta: float) -> void:
 ## Actually execute the work.
 func _execute_work(work: Array, job: Callable, threads_override = -1) -> Array[ThreadPoolUnit]:
 	if not THREADED:
-		job.bind(work).call()
+		job.bind(work, null).call()
 		return []
 	
 	var amount_of_work := work.size()

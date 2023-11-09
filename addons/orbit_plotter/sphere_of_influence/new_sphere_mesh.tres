@@ -1,0 +1,41 @@
+[gd_resource type="SphereMesh" load_steps=5 format=3 uid="uid://dsehsbanir0fq"]
+
+[sub_resource type="Shader" id="Shader_ya28m"]
+code = "shader_type spatial;
+render_mode blend_mix,depth_draw_opaque,cull_back,diffuse_burley,specular_schlick_ggx,shadows_disabled,ambient_light_disabled;
+
+
+uniform vec4 albedo : source_color;
+uniform float rim : hint_range(0,1);
+uniform float rim_tint : hint_range(0,1);
+uniform sampler2D texture_rim : hint_default_white,filter_linear_mipmap,repeat_enable;
+
+
+void fragment() {
+	ALBEDO = albedo.rgb;
+	ALPHA *= albedo.a;
+	
+	vec2 rim_tex = texture(texture_rim, UV).xy;
+	RIM = rim*rim_tex.x;
+	RIM_TINT = rim_tint*rim_tex.y;
+}
+"
+
+[sub_resource type="Curve" id="Curve_mdts2"]
+_data = [Vector2(0, 0), 0.0, 1.0, 0, 1, Vector2(1, 1), 1.0, 0.0, 1, 0]
+point_count = 2
+
+[sub_resource type="CurveTexture" id="CurveTexture_amtof"]
+curve = SubResource("Curve_mdts2")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_awgju"]
+render_priority = 0
+shader = SubResource("Shader_ya28m")
+shader_parameter/albedo = Color(0.843137, 0.843137, 0.843137, 0.00784314)
+shader_parameter/rim = 1.0
+shader_parameter/rim_tint = 0.5
+shader_parameter/texture_rim = SubResource("CurveTexture_amtof")
+
+[resource]
+material = SubResource("ShaderMaterial_awgju")
+flip_faces = true
